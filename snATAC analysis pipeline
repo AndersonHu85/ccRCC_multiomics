@@ -425,6 +425,6 @@ options(repr.plot.height = 40, repr.plot.width = 40)
 
 Epi_aggr <- AddTargetAssay(object = Epi_aggr, df.grn = df.grn2)
 p1 <- PseudotimePlot(object = Epi_aggr, tf.use = "HNF1A")+scale_color_npg()
-p2 <- PseudotimePlot(object = Epi_aggr, tf.use = "FOSL1")+scale_color_npg()
+p2 <- PseudotimePlot(object = Epi_aggr, tf.use = "CEBPB")+scale_color_npg()
 
 p1 + p2
