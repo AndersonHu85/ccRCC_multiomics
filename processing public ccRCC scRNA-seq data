@@ -90,10 +90,32 @@ Heatmap(cell_exp,
         column_title = NULL) 
 
 
+#####subtyping with consensusclusterplus##################
 
 
+coding_matrix <- read.csv("./coding_mRNA.csv", sep = ",", header = T, row.names = 1)
 
+coding_matrix <- log2(coding_matrix+1)
 
+tumor <- grep(colnames(d), pattern = "_T", value = T)
+
+d=coding_matrix[top_marker$gene,tumor]
+
+d = sweep(d,1, apply(d,1,median,na.rm=T))
+d <- as.matrix(d)
+
+library(ConsensusClusterPlus)
+title="./ConsensusClusterPlus/"
+results = ConsensusClusterPlus(d,maxK=20,
+                               reps=100,
+                               pItem=0.8,
+                               pFeature=1,
+                               title=title,
+                               clusterAlg="hc",
+                               distance="pearson",
+                               seed=1262118388.71279,
+                               plot="png",
+                               verbose = T)
 
 
 
