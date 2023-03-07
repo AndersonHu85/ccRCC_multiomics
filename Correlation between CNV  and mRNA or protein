@@ -22,11 +22,11 @@ multiOmicsViz(cnv_mat,sourceOmicsName="CNV","All",targetOmicsList,
 gene_use <- intersect(rownames(cnv_gene),rownames(protein))
 sample_use <- intersect(colnames(cnv_gene),colnames(protein))
 
-WTS_mat <- protein[gene_use,sample_use]
+protein_mat <- protein[gene_use,sample_use]
 cnv_mat <- cnv_gene[gene_use,sample_use]
 
 targetOmicsList <- list()
-targetOmicsList[[1]] <- WTS_mat
+targetOmicsList[[1]] <- protein_mat
 
 outputfile <- paste("./","/heatmap_protein_CNV",sep="")
 multiOmicsViz(cnv_mat,sourceOmicsName="CNV","All",targetOmicsList,
