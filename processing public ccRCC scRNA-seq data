@@ -7,6 +7,8 @@ library(ggplot2)
 library(cowplot)
 library(ggsci)
 library(RColorBrewer)
+library(ComplexHeatmap)
+library(circlize)
 options(stringsAsFactors = F)
 
 
