@@ -1,0 +1,33 @@
+library(multiOmicsViz)
+
+cnv_gene <- read.table("./broad_data_by_genes.txt",sep = "\t",header = T, row.names = 1)
+exp_mat <- read.csv("./coding_mRNA.csv", header = T, row.names = 1)
+protein <- read.table("./protein_gene_level.csv", header = T, row.names = 1)
+
+
+gene_use <- intersect(rownames(cnv_gene),rownames(exp_mat))
+sample_use <- intersect(colnames(cnv_gene),colnames(exp_mat))
+
+WTS_mat <- exp_mat[gene_use,sample_use]
+cnv_mat <- cnv_gene[gene_use,sample_use]
+
+targetOmicsList <- list()
+targetOmicsList[[1]] <- WTS_mat
+
+outputfile <- paste("./","/heatmap_WTS_CNV",sep="")
+multiOmicsViz(cnv_mat,sourceOmicsName="CNV","All",targetOmicsList,
+              "mRNA","All",0.01,outputfile=outputfile)
+
+
+gene_use <- intersect(rownames(cnv_gene),rownames(protein))
+sample_use <- intersect(colnames(cnv_gene),colnames(protein))
+
+WTS_mat <- protein[gene_use,sample_use]
+cnv_mat <- cnv_gene[gene_use,sample_use]
+
+targetOmicsList <- list()
+targetOmicsList[[1]] <- WTS_mat
+
+outputfile <- paste("./","/heatmap_protein_CNV",sep="")
+multiOmicsViz(cnv_mat,sourceOmicsName="CNV","All",targetOmicsList,
+              "protein","All",0.01,outputfile=outputfile)
