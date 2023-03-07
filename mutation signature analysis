@@ -1,0 +1,59 @@
+library(sigminer)
+library(NMF)
+library(ComplexHeatmap)
+library(circlize)
+library(RColorBrewer)
+library(viridis)
+library(ggsci)
+
+list <- list.files("./",pattern = "hg38_multianno.vcf", full.names = TRUE)
+
+maf <- read_vcf(list)
+mt_tally <- sig_tally(
+  maf,
+  ref_genome = "BSgenome.Hsapiens.UCSC.hg38",
+  useSyn = TRUE
+)
+mt_tally$nmf_matrix[1:5, 1:5]
+
+mt_sig <- sig_auto_extract(mt_tally$nmf_matrix,
+                            K0 = 10, nrun = 10,
+                            strategy = "stable"
+)
+
+
+sim_v3 <- get_sig_similarity(mt_sig, sig_db = "SBS")
+
+show_sig_profile(mt_sig, mode = "SBS", style = "cosmic",x_label_angle = 90,palette = color)+scale_color_npg()
+
+
+mark_gene <- colnames(sim_v3$similarity)[rowMax(t(sim_v3$similarity))>0.7]
+mark_gene <- colnames(sim_v3$similarity)[colnames(sim_v3$similarity)%in%mark_gene]
+gene_pos <- which(colnames(sim_v3$similarity) %in% mark_gene)
+row_anno <-  rowAnnotation(mark_gene = anno_mark(at = gene_pos, 
+                                                 labels = mark_gene))
+
+col <- ArchR::ArchRPalettes[19][[1]]
+Heatmap(t(sim_v3$similarity), 
+        col = colorRamp2(seq(0,1,length.out = 9),col),
+        cluster_rows = T,
+        cluster_columns = F,
+        show_column_names = T,
+        show_row_names = F,
+        use_raster=T,
+        border = "BLACK",
+        show_row_dend = T,
+        na_col = "grey85",
+        clustering_method_rows = "ward.D2",
+        clustering_method_columns = "ward.D",
+        column_gap = unit(1, "mm"),
+        right_annotation = row_anno,
+        row_gap = unit(0, "mm"),
+        column_title = NULL) # 不需要列标题)
+
+grp <- get_groups(mt_sig,method = "exposure")
+grp_label <- grp$group
+names(grp_label) <- grp$sample
+show_sig_exposure(mt_sig, style = "cosmic", groups = grp_label,
+                  palette = pal_npg()(7), rm_grid_line = T,rm_panel_border=F,rm_space=T)
+
