@@ -1,0 +1,60 @@
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(Seurat)
+library(harmony)
+library(ggplot2)
+library(cowplot)
+library(ggsci)
+library(RColorBrewer)
+options(stringsAsFactors = F)
+
+
+merge@meta.data$nUMI <- merge@meta.data$nCount_RNA
+merge@meta.data$nGene <- merge@meta.data$nFeature_RNA
+
+
+mito.genes <- grep(
+  pattern = "^MT-",
+  x = rownames(x = merge@assays$RNA@data),
+  value = TRUE)
+
+# 统计线粒体基因丰度的百分比
+percent.mito <- Matrix::colSums(merge@assays$RNA@counts[mito.genes, ]) / Matrix::colSums(merge@assays$RNA@counts)
+
+# 将统计的百分比数据添加对象中
+merge <- AddMetaData(
+  object = merge,
+  metadata = percent.mito,
+  col.name = "percent.mito")
+VlnPlot(merge, c("nUMI","nGene","percent.mito"), group.by = "sample",pt.size = 0)
+
+
+merge <- subset(merge, subset = percent.mito < 0.3)
+merge <- subset(merge, subset = nGene < 7500)
+merge <- subset(merge, subset = nUMI > 1000)
+merge <- subset(merge, subset = nUMI < 30000)
+
+merge <- NormalizeData(merge)
+
+merge <- FindVariableFeatures(merge)
+VariableFeaturePlot(merge)
+merge <- ScaleData(merge, verbose = T)
+merge <- RunPCA(merge, npcs = 100, verbose = FALSE)
+PCAPlot(merge)
+ElbowPlot(merge, ndims = 100)
+merge <- RunHarmony(merge, c("sample"))
+merge <- FindNeighbors(merge, reduction = "harmony", dims = 1:75, do.plot = T)
+merge <- FindClusters(merge, resolution = 1)
+
+merge <- RunUMAP(merge, reduction = "harmony", dims = 1:75)
+
+merge <- CellCycleScoring(merge, g2m.features = cc.genes$g2m.genes,
+                                     s.features = cc.genes$s.genes)
+
+
+celltype <- c(brewer.pal(11,"Set3")[c(1,3:8,10:11)],pal_aaas(alpha = 0.7)(10)[-2],brewer.pal(8,"Set2"),brewer.pal(11,"Paired"))#[13:1]
+
+DimPlot(merge, reduction = "umap", group.by = "celltype2", label = F, repel = TRUE,#pt.size = 1,
+        cols = celltype
+        )
