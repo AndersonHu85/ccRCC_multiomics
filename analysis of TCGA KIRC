@@ -1,0 +1,83 @@
+library(Biobase)
+library(CMScaller)
+
+
+TCGA_exp <- read.table("./TCGA.KIRC.exp.txt", sep = "\t", header = T, row.names = 1)
+tumor <- tumor[grep(tumor, pattern = ".01")]
+TCGA_exp <- TCGA_exp[,tumor]
+
+tmp_org <- fread("./signature.txt") #Table S3
+colnames(tmp_org) <- c("probe,"class)
+
+emat <- ematAdjust(TCGA_exp[tmp_org$probe,tumor], normMethod = 'RLE')
+res <- ntp(emat, tmp_org, doPlot=TRUE, nPerm=1000, seed = 42,nCores =30)
+
+predicted_class <- res$prediction
+
+TCGA_class <- data.frame(predicted_class,row.names = tumor)	
+
+top_anno <- HeatmapAnnotation(df = TCGA_class, col = 
+                                list(predicted_class=c("IM1"="#E64B35FF", "IM2"="#4DBBD5FF", "IM3"="#00A087FF", "IM4"="#3C5488FF" )),
+                              show_legend = T)		
+
+
+heat <- Heatmap(t(scale(t(TCGA_exp[tmp_org$probe,tumor]))), 
+col = colorRamp2(seq(-2,2,length.out = 11),col),
+cluster_rows = F,
+cluster_columns = F,   
+row_names_gp = gpar(fontsize = 10),
+show_column_names = F,
+show_row_names = F,
+border = "black",
+row_split = tmp_org2$class,
+column_split = res$prediction,
+column_gap = unit(0, "mm"),
+row_gap = unit(0, "mm"),
+top_annotation = top_anno, 
+#column_title = NULL
+) 
+heat
+
+############DCCD score of IM1&IM3 class###########
+IM4_up <- tmp_org$probe[tmp_org$class=="IM4"]
+IM2_up <- tmp_org$probe[tmp_org$class=="IM2"]
+pathway_list <- list(IM4_up,IM2_up)
+names(pathway_list) <- c("IM4_up","IM2_up")
+
+library(GSVA)
+ssgsea <- gsva(as.matrix(TCGA_exp_sub), pathway_list, method = "ssgsea", parallel.sz = 0, verbose = T)
+	
+TCGA_class$IM2_score <- scale(t(ssgsea)[,"IM2_up"])
+TCGA_class$IM4_score <- scale(t(ssgsea)[,"IM4_up"])
+	
+TCGA_class$DCCD_score <- (TCGA_class$IM4_score)-(TCGA_class$IM2_score)
+TCGA_class <- TCGA_class[order(TCGA_class$DCCD_score),]
+
+IM1_3_barcode <- rownames(TCGA_class)[TCGA_class$predicted_class %in%c("IM1","IM3")]
+TCGA_exp_sub <- TCGA_exp[,IM1_3_barcode]
+
+TCGA_class$IM1 <- "IM1"
+TCGA_class$IM1[TCGA_class$prediction != "IM1"] <- "NA"
+TCGA_class$IM3 <- "IM3"
+TCGA_class$IM3[TCGA_class$prediction != "IM3"] <- "NA"
+
+bottom_anno <- HeatmapAnnotation(df = TCGA_class[,c("IM1","IM3")], col = 
+                                list(IM1=c("NA"="white", "IM1"="black"),
+                                     IM3=c("NA"="white", "IM3"="black"),
+                              show_legend = T,border = T)
+
+heat=Heatmap(t(scale(t(TCGA_exp_sub[c(IM4_up,IM2_up),IM1_3_barcode]))), 
+             col = colorRamp2(seq(-2,2,length.out = 11),col),
+             cluster_rows = T,
+             cluster_columns = F,
+             show_column_names = F,
+             show_row_names = T,
+             use_raster = F,
+             row_split = c(rep("IM4_up",length(IM4_up)),rep("IM2_up",length(IM2_up))),
+             border = "black",
+             column_gap = unit(0, "mm"),
+             row_gap = unit(0, "mm"),
+             bottom_annotation = bottom_anno,
+             column_title = NULL) # 不需要列标题)
+heat
+
