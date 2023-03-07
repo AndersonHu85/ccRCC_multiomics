@@ -58,3 +58,43 @@ celltype <- c(brewer.pal(11,"Set3")[c(1,3:8,10:11)],pal_aaas(alpha = 0.7)(10)[-2
 DimPlot(merge, reduction = "umap", group.by = "celltype2", label = F, repel = TRUE,#pt.size = 1,
         cols = celltype
         )
+
+
+merge <- SetIdent(merge, cells = NULL, 
+                              value = merge@meta.data$celltype2)
+
+all.markers_celltype <- FindAllMarkers(merge, verbose = T)
+
+marker <- all.markers_celltype[all.markers_celltype$avg_logFC > 0.8,]
+marker <- marker[!duplicated(marker$gene),]
+
+marker %>% group_by(cluster) %>% top_n(60, avg_logFC) -> top_marker
+
+ave <- AverageExpression(merge,return.seurat = T)
+
+cell_exp <- ave@assays$RNA@data[top_marker$gene,]
+
+cell_exp <- (scale(t(cell_exp)))
+cell_exp <- na.omit(cell_exp)
+
+Heatmap(cell_exp, 
+        col = colorRamp2(seq(-4,4,length.out = 11),col),
+        cluster_rows = F,
+        cluster_columns = F,
+        show_column_names = F,
+        show_row_names = T,
+        use_raster=F,
+        column_gap = unit(1, "mm"),
+        column_title = NULL) 
+
+
+
+
+
+
+
+
+
+
+
+
