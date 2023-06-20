@@ -1,0 +1,78 @@
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(harmony)
+library(Seurat)
+library(ggplot2)
+library(cowplot)
+library(ggsci)
+library(Rcpp)
+library(RColorBrewer)
+library(tidyr)
+options(stringsAsFactors = F)
+
+merge@meta.data$nUMI <- merge@meta.data$nCount_RNA
+merge@meta.data$nGene <- merge@meta.data$nFeature_RNA
+
+
+mito.genes <- grep(
+  pattern = "^MT-",
+  x = rownames(x = merge@assays$RNA@data),
+  value = TRUE)
+
+percent.mito <- Matrix::colSums(merge@assays$RNA@counts[mito.genes, ]) / Matrix::colSums(merge@assays$RNA@counts)
+
+merge <- AddMetaData(
+  object = merge,
+  metadata = percent.mito,
+  col.name = "percent.mito")
+VlnPlot(merge, c("nUMI","nGene","percent.mito"), group.by = "sample",pt.size = 0)
+
+merge <- subset(merge, subset = percent.mito < 0.05)
+merge <- subset(merge, subset = n_genes > 500)
+merge <- subset(merge, subset = nUMI > 1000)
+
+merge <- NormalizeData(merge)
+
+merge <- FindVariableFeatures(merge, nfeatures = 2000)
+VariableFeaturePlot(merge)
+merge <- ScaleData(merge, verbose = T)
+merge <- RunPCA(merge, npcs = 50, verbose = FALSE)
+PCAPlot(merge,cols=celltype)
+ElbowPlot(merge, ndims = 50)
+merge <- RunHarmony(merge, c("sample"),max.iter.harmony = 50)
+merge <- FindNeighbors(merge, reduction = "harmony", dims = 1:50, do.plot = T)
+merge <- FindClusters(merge, resolution = 1)
+
+merge  <- RunUMAP(merge, reduction = "harmony", dims = 1:50, n.components = 2)
+
+p1 <- DimPlot(merge, reduction = "umap", group.by = "RNA_snn_res.1", label = TRUE)+ NoLegend()
+p2 <- DimPlot(merge, reduction = "umap", group.by = "sample", pt.size = 0.4,
+              label = TRUE,raster = T) + NoLegend()
+plot_grid(p2,p1)
+
+merge <- CellCycleScoring(merge, g2m.features = cc.genes$g2m.genes,
+                               s.features = cc.genes$s.genes)
+
+meta <- merge@meta.data
+column <- as.data.frame(table(meta$sample, meta$celltype2))
+colnames(column) <- c("sample","celltype2","Freq")
+
+column$group2 <- plyr::mapvalues(x = column$Var1, 
+                                 from = rownames(cluster_info2), 
+                                 to = cluster_info2$class)
+                                 
+column$group2 <- as.character(column$group2)
+
+p1 <- ggplot(column,aes(sample,weight=Freq,fill=celltype2))+geom_bar(position="fill")+#coord_flip()+
+  theme(panel.grid.major =element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  scale_fill_manual(values = c(celltype)) 
+p1 +  facet_grid(~group2,scales = "free", space = "free") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        #axis.line = element_line(colour = "black",size=1), 
+        #axis.ticks = element_line(size = 1, color="black"),
+        axis.ticks.length = unit(.2, "cm"))
+
