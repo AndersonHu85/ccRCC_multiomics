@@ -21,10 +21,8 @@ mito.genes <- grep(
   x = rownames(x = merge@assays$RNA@data),
   value = TRUE)
 
-# 统计线粒体基因丰度的百分比
 percent.mito <- Matrix::colSums(merge@assays$RNA@counts[mito.genes, ]) / Matrix::colSums(merge@assays$RNA@counts)
 
-# 将统计的百分比数据添加对象中
 merge <- AddMetaData(
   object = merge,
   metadata = percent.mito,
@@ -116,7 +114,7 @@ results = ConsensusClusterPlus(d,maxK=20,
                                seed=1262118388.71279,
                                plot="png",
                                verbose = T)
-
+####k=4 was choosen according to the CDF plot#################
 
 
 
