@@ -1,0 +1,18 @@
+library(Cardinal)
+library(ggpubr)
+library(ggsci)
+library(ggrepel)
+
+#data(pig206, package="CardinalWorkflows")
+H46 <- readImzML(name="H46-T-neg", folder = "./")
+H46 <- readMSIData("H46-T-pos.imzML")
+H46 <- as(H46, "MSImagingExperiment")
+
+H46 <- H46 %>%
+  subsetPixels(!is.na(diagnosis)) %>%
+  normalize(method="tic") %>%
+  process()
+H46
+
+image(H46,mz=132.0302, normalize.image="none",colorscale=c(rep("black",2),col.map("jet",n=99)),
+      contrast.enhance="histogram",smooth.image = "gaussian")
