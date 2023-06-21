@@ -81,3 +81,7 @@ heat=Heatmap(t(scale(t(TCGA_exp_sub[c(IM4_up,IM2_up),IM1_3_barcode]))),
              column_title = NULL) # 不需要列标题)
 heat
 
+
+
+
+
