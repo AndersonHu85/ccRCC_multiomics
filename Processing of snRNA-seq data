@@ -126,4 +126,117 @@ infercnv_obj = infercnv::run(infercnv_obj,
 
 
 
+########processing Epithelial cells alone#################
+Epi <- merge[,merge$celltype=="Epithelial"]
+Epi <- NormalizeData(Epi)
+
+Epi <- FindVariableFeatures(Epi, nfeatures = 2000)
+VariableFeaturePlot(Epi)
+Epi <- ScaleData(Epi, verbose = T)
+Epi <- RunPCA(Epi, npcs = 50, verbose = FALSE)
+PCAPlot(Epi)
+ElbowPlot(Epi, ndims = 50)
+Epi <- RunHarmony(Epi, c("sample"),max.iter.harmony = 50)
+Epi <- FindNeighbors(Epi, reduction = "harmony", dims = 1:30, do.plot = T)
+Epi <- FindClusters(Epi, resolution = 1)
+
+Epi  <- RunUMAP(Epi, reduction = "pca", dims = 1:30, n.components = 2)
+
+library(destiny)
+
+dm <- DiffusionMap(Epi@reductions$harmony@cell.embeddings[,1:15],k = 3,n_pcs = NA, verbose = TRUE, n_eigs=2)
+plot(dm)
+
+#####################trajectory######################
+library(monocle3)
+featureData <- as.data.frame(Epi@assays$RNA@counts@Dimnames[[1]])
+colnames(featureData) <- "gene_short_name"
+
+rownames(featureData) <- featureData[,1]
+cds <- new_cell_data_set((Epi@assays$RNA@data),
+                         cell_metadata = Epi@meta.data,
+                         gene_metadata = featureData)
+cds
+
+cds@int_colData@listData[["reducedDims"]]@listData[["PCA"]] <- as.matrix(Epi_sub@reductions[["pca"]]@cell.embeddings)
+cds@int_colData@listData[["reducedDims"]]@listData[["Aligned"]] <- as.matrix(Epi@reductions[["harmony"]]@cell.embeddings)
+
+cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- as.matrix(Epi@reductions[["umap"]]@cell.embeddings)
+cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]][,1] <- PHATE$DC1*100
+cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]][,2] <- PHATE$DC2*100
+
+cds <- cluster_cells(cds)
+plot_cells(cds, color_cells_by = c("partition"))
+
+cds <- learn_graph(cds,close_loop=F)
+plot_cells(cds,show_trajectory_graph=T,
+           group_label_size = 4,
+           color_cells_by = "sample",
+           cell_size = 0.7,
+           label_cell_groups=FALSE,
+           label_groups_by_cluster=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE) + scale_color_manual(values = celltype)
+cds <- order_cells(cds)
+plot_cells(cds,show_trajectory_graph=T,
+           color_cells_by = "pseudotime",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           cell_size = 0.7,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+
+Epi$pseudotime <- cds@principal_graph_aux@listData[["UMAP"]][["pseudotime"]]
+
+
+##############draw pseudotime heatmap of trajectory############
+library(monocle)
+library(scater, quietly = TRUE)
+library(knitr)
+library(Biobase)
+options(stringsAsFactors = FALSE)
+
+seq <- seq(from=1,to=ncol(Epi),by=7)
+metadata <- Epi@meta.data[seq,]
+featureData <- as.data.frame(Epi@assays$RNA@counts@Dimnames[[1]])
+rownames(featureData) <- featureData[,1]
+pd <- new("AnnotatedDataFrame", data = metadata)
+fd <- new("AnnotatedDataFrame", data = featureData)
+
+monocle <- new("CellDataSet", exprs=as.matrix(Epi_sub@assays$RNA@data), phenoData = pd,
+               expressionFamily = negbinomial(),lowerDetectionLimit=0.1)
+monocle
+
+monocle <- estimateSizeFactors(monocle)
+monocle <- estimateDispersions(monocle)
+
+TF_final <- read.csv("./TF_final.csv")
+
+newdata <- data.frame(Pseudotime = seq(min(monocle$pseudotime), 
+                                       max(monocle$pseudotime), length.out = 1000))
+cds_Epi_subset <- monocle[c(unique(TF_final$symbol)),]
+genSmoothCurves_mat<-genSmoothCurves(cds_Epi_subset,
+                                     new_data = newdata,
+                                     trend_formula = "~sm.ns(pseudotime, df = 3)",
+                                     cores = 1)
+order <- order(monocle2$pseudotime,decreasing = F)
+
+heat <- Heatmap(t(scale(t(genSmoothCurves_mat[,order]))), 
+        col = colorRamp2(seq(-2,2,length.out = 11),cols),
+        cluster_rows = T,
+        cluster_columns = F,
+        show_column_names = F,
+        show_row_names = T,
+        use_raster=F,
+        border = NA,
+        show_row_dend = T,
+        na_col = "grey85",
+        #smooth = TRUE,
+        clustering_method_rows = "ward.D",
+        column_gap = unit(1, "mm"),
+        row_gap = unit(0, "mm"),
+        row_dend_width = unit(20, "mm"),
+        column_title = NULL) )
+heat
+
 
