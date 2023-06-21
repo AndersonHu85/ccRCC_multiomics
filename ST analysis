@@ -97,3 +97,52 @@ tra_spata <- SPATA2::plotTrajectoryHeatmap(object = X98,
                       show_rownames = T, 
                       split_columns = F, # splits the heatmap to highlight the trajectory parts
                       smooth_span = 0.5)
+
+
+
+infercnv_obj <- readRDS("./run.final.infercnv_obj")
+tumor_mat <- infercnv_obj@expr.data
+tumor_mat <- as.matrix(tumor_mat)
+gene_order <- infercnv_obj@gene_order
+gene_order <- as.data.frame(gene_order)
+gene_order <- gene_order[gene_order[,1]%in%c(1:22),]
+gene_order$chr <- as.numeric(as.character(gene_order$chr))
+gene_order <- gene_order[order(gene_order$chr,decreasing = F),]
+tumor_mat <- tumor_mat[rownames(gene_order),]
+tumor_mat <- t(tumor_mat)
+tumor_mat[1:5,1:5]
+
+library(ComplexHeatmap)
+library(circlize)
+library(RColorBrewer)
+library(viridis)
+library(ggsci)
+library(ggplot2)
+
+seurat_clusters <- pal_npg()(8)
+names(seurat_clusters) <- c(0,1,2,3,4,5,6,7)
+cl_col =list(seurat_clusters=seurat_clusters
+)
+
+right_anno <- rowAnnotation(df = annotation,col = cl_col,show_legend = T)
+col <- c(brewer.pal(11, "RdBu"))[c(11:1)]
+
+heat <- Heatmap(tumor_mat[Y7,], 
+                col = colorRamp2(seq(0.7,1.3,length.out = 11),col),
+                cluster_rows = T,
+                cluster_columns = F,
+                show_column_names = F,
+                show_row_names = F,
+                use_raster=T,
+                border = "BLACK",
+                show_row_dend = T,
+                clustering_method_rows = "ward.D",
+                row_gap = unit(0.5, "mm"),
+                column_split = gene_order$chr,
+                column_gap = unit(0, "mm"),
+                row_split = annotation$seurat_clusters
+                row_gap = unit(0, "mm"),
+                top_annotation = top_anno,
+                right_annotation = right_anno,
+                column_title = NULL) )
+heat
