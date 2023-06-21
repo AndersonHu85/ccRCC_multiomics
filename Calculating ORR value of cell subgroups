@@ -118,6 +118,8 @@ b = ifelse(b >= 0.05&(a>1.5|a<0.5), "",
                   ifelse(b < 0.05&(a>1.5|a<0.5),"*","")))))
 
 bk=seq(0,2,by=0.01)
+col <- viridis(11,option = "D")
+
 pdf(file=paste("Immune_OR.pdf", sep=""), height = 8, width = 10)
 pheatmap(a, border_color = "NA", fontsize = 9,cellheight = 12,cellwidth = 20,clustering_distance_rows="correlation",
          display_numbers = b,number_color="black",fontsize_number=10,
