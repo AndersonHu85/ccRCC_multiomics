@@ -130,7 +130,7 @@ Heatmap(t(sim_v3$similarity),
         column_gap = unit(1, "mm"),
         right_annotation = row_anno,
         row_gap = unit(0, "mm"),
-        column_title = NULL) # 不需要列标题)
+        column_title = NULL)
 
 
 ##################Extended data Figure 1F######################
