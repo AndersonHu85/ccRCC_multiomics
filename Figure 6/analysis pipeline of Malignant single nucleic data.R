@@ -16,7 +16,6 @@ Epi_snRNA <- CellCycleScoring(Epi_snRNA, g2m.features = cc.genes$g2m.genes,
                           s.features = cc.genes$s.genes)
 
 
-########################### Figure 2E #############################
 Epi_snRNA  <- RunUMAP(Epi_snRNA, reduction = "harmony", dims = 1:40, n.components = 2)
 
 DimPlot(Epi_snRNA, reduction = "umap",  label = F, repel = TRUE, raster= F,group.by = "sample",
