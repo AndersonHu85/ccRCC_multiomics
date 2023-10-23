@@ -1,1 +1,5 @@
-Scripts for analysis shown in Figure 1 and Extended Data Figure 1. code_SNA.R contains code for Fig. 1b-1f and eFig 1a-1g. PCA&correlation&ssgsea analysis.R contains code for Fig 1g-1h. DA_score.R contains code for Figure 1i. get.kegg.all.R & get.kegg.byId.R could help load genesets form KEGG used in DA score analysis.
+Scripts for analysis shown in Figure 1 and Extended Data Figure 1. 
+code_SNA.R contains code for Fig. 1b-1f and eFig 1a-1g. 
+PCA&correlation&ssgsea analysis.R contains code for Fig 1g-1h. 
+DA_score.R contains code for Figure 1i. 
+get.kegg.all.R & get.kegg.byId.R could help load genesets form KEGG used in DA score analysis.
