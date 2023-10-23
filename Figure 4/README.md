@@ -1,0 +1,1 @@
+Scripts for analysis shown in Figure 4 and Extended Data Figure 6. bulk_analysis.R contains code for Fig. 4a-4b,4f and 4h. Processing snRNA-seq data of NATs.R contains code for eFig 6b-6d. Related source data is available in the Source Data folder or at Zenodo (https://zenodo.org/record/8063124).
