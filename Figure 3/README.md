@@ -1,0 +1,1 @@
+Scripts for analysis shown in Figure 3 and Extended Data Figure 5. ssgsea analysis.R contains code for Fig. 3a-3b,3f and eFig 5a. differential analysis of metabolites.R contains code for Fig 3e. visulization of spatial metabolomics.R contains code for Fig. 3h. Related source data is available in the Source Data folder or at Zenodo (https://zenodo.org/record/8063124).
